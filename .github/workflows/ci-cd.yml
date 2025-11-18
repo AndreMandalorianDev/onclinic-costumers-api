@@ -1,0 +1,70 @@
+name: Commit Branch Deployment
+
+on:
+  push:
+    branches:
+      - 'commit-*'   # Roda apenas em branches começando com commit-
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build & Test
+        run: mvn clean verify -B
+
+      - name: Gerar relatório de testes (opcional)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports
+          path: target/surefire-reports/
+
+  create-pr:
+    name: Criar PR automático
+    needs: build-test
+    runs-on: ubuntu-latest
+    if: success()   # Só cria PR se build + test passarem
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Criar Pull Request (draft)
+        id: create_pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}
+          base: develop
+          title: "Deploy da branch ${{ github.ref_name }} para develop"
+          body: |
+            PR criado automaticamente após build e testes bem-sucedidos.
+            Branch: **${{ github.ref_name }}**
+          draft: true          # PR criado como DRAFT (bloqueado)
+
+  approve-pr:
+    name: Tornar PR pronto para revisão
+    needs: create-pr
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Tornar PR 'ready for review'
+        if: steps.create_pr.outputs.pull-request-number != ''
+        uses: octokit/request-action@v2.x
+        with:
+          route: PATCH /repos/${{ github.repository }}/pulls/${{ steps.create_pr.outputs.pull-request-number }}
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
