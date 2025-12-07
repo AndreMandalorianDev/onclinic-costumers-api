@@ -1,0 +1,34 @@
+name: Build & Test
+
+on:
+  push:
+    branches:
+      - "commit-*"
+
+jobs:
+  build_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Build & Test
+        run: mvn clean verify -DskipTests=false
+
+      - name: Create Pull Request
+        if: success()
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: develop
+          branch: ${{ github.ref_name }}
+          title: "Automated PR from ${GITHUB_REF_NAME}"
+          body: "PR criado automaticamente após build bem-sucedido."
+          draft: false
