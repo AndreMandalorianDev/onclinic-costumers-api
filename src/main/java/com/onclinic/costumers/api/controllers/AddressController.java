@@ -11,8 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping(value = "/onclinic-costumers-api/addresses")
-@CrossOrigin
+@RequestMapping("/onclinic-costumers-api/addresses")
 public class AddressController {
 
     private static final Logger logger = LoggerFactory.getLogger(AddressController.class);
@@ -32,5 +31,10 @@ public class AddressController {
             logger.error("AddressController - Error on add a new Address: {}", ex.getMessage());
             return new ResponseEntity<String>("Error on add a new Address: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @GetMapping
+    public ResponseEntity<String> getAddress(){
+        return new ResponseEntity<String>("Hello World", HttpStatus.OK);
     }
 }

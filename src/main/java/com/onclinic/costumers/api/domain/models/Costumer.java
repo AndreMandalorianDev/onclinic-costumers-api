@@ -3,6 +3,7 @@ package com.onclinic.costumers.api.domain.models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.Date;
 
 @Entity
@@ -26,6 +27,7 @@ public class Costumer {
     @Column(name = "birth_date", columnDefinition = "DATE")
     private Date birthDate;
 
-    @OneToOne
-    private Address address;
+    @OneToMany
+    private ArrayList<Address> addresses;
+
 }
