@@ -1,4 +1,4 @@
-name: Build & Create PR
+name: Build & Test
 
 on:
   push:
@@ -20,17 +20,19 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 21
+          distribution: 'temurin'
+          java-version: '21'
 
       - name: Build & Test
-        run: mvn clean verify
+        run: mvn clean verify -DskipTests=false
 
       - name: Create Pull Request
+        if: success()
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: develop
           branch: ${{ github.ref_name }}
-          title: "PR automático: ${{ github.ref_name }}"
-          body: "PR criado automaticamente após build e testes bem-sucedidos."
+          title: "Automated PR from ${GITHUB_REF_NAME}"
+          body: "PR criado automaticamente após build bem-sucedido."
+          draft: false
