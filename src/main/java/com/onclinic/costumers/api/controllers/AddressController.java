@@ -2,6 +2,7 @@ package com.onclinic.costumers.api.controllers;
 
 import com.onclinic.costumers.api.domain.dtos.AddressDTO;
 import com.onclinic.costumers.api.domain.models.Address;
+import com.onclinic.costumers.api.http.responses.Response;
 import com.onclinic.costumers.api.services.interfaces.IAdressService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,16 +21,18 @@ public class AddressController {
     private IAdressService _addressService;
 
     @PostMapping
-    public ResponseEntity<String> addAddress(@RequestBody AddressDTO addressDTO){
+    public ResponseEntity<Response> addAddress(@RequestBody AddressDTO addressDTO){
         logger.info("AddressController - Adding a new address...");
 
         try {
             Address address =  _addressService.addAddress(addressDTO);
             logger.info("AddressController - Success on add new address: {}", address.getAdressId());
-            return new ResponseEntity<String>("Success on add new Address: " + address.getAdressId(), HttpStatus.CREATED);
+            Response response = new Response("Success on add new Address", address, 201);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
         }catch (Exception ex){
             logger.error("AddressController - Error on add a new Address: {}", ex.getMessage());
-            return new ResponseEntity<String>("Error on add a new Address: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            Response response = new Response("Error on add a new Address: " + ex.getMessage(), null, 500);
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
