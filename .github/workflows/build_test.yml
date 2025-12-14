@@ -6,7 +6,7 @@ on:
       - "commit-*"
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
 
 jobs:
@@ -20,19 +20,19 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: temurin
+          java-version: 21
 
       - name: Build & Test
-        run: mvn clean verify -DskipTests=false
+        run: mvn clean verify
 
       - name: Create Pull Request
-        if: success()
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          base: develop
-          branch: ${{ github.ref_name }}
-          title: "Automated PR from ${GITHUB_REF_NAME}"
-          body: "PR criado automaticamente após build bem-sucedido."
-          draft: false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base develop \
+            --head "${{ github.ref_name }}" \
+            --title "PR automático: ${{ github.ref_name }}" \
+            --body "PR criado automaticamente após build bem-sucedido." \
+            || echo "PR já existe"
