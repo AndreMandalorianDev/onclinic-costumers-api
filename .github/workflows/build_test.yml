@@ -1,0 +1,38 @@
+name: Build & Test
+
+on:
+  push:
+    branches:
+      - "commit-*"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  build_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build & Test
+        run: mvn clean verify
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base develop \
+            --head "${{ github.ref_name }}" \
+            --title "PR automático: ${{ github.ref_name }}" \
+            --body "PR criado automaticamente após build bem-sucedido." \
+            || echo "PR já existe"

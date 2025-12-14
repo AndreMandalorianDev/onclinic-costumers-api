@@ -1,0 +1,68 @@
+name: Build & Deploy (Dev)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write   # OIDC
+      contents: read
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ===========================================================
+      # 1. Autenticação na AWS VIA OIDC (sem keys!)
+      # ===========================================================
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::347363585842:role/GitHubActionsDeployRole
+
+      # ===========================================================
+      # 2. Buildar + enviar imagem para Docker Hub
+      # ===========================================================
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push image
+        run: |
+          IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/onclinic-api-dev:latest"
+          docker build -t $IMAGE .
+          docker push $IMAGE
+
+      # ===========================================================
+      # 3. Criar pacote de deploy (appspec + scripts)
+      # ===========================================================
+      - name: Create bundle
+        run: |
+          cd deployment
+          zip -r ../bundle.zip .
+          cd ..
+
+      - name: Upload bundle to S3
+        run: |
+          aws s3 cp bundle.zip s3://SEU_BUCKET/onclinic-api-dev/bundle.zip
+
+      # ===========================================================
+      # 4. Iniciar deploy no CodeDeploy
+      # ===========================================================
+      - name: Start CodeDeploy deployment
+        run: |
+          aws deploy create-deployment \
+            --application-name onclinic-api-dev \
+            --deployment-group-name onclinic-api-dev-group \
+            --s3-location bucket=SEU_BUCKET,bundleType=zip,key=onclinic-api-dev/bundle.zip \
+            --deployment-config-name CodeDeployDefault.AllAtOnce
